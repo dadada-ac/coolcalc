@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Орбитальный калькулятор</title>
+  <style>
+    :root {
+      --bg: #070b16;
+      --panel: rgba(14, 22, 42, 0.78);
+      --text: #e8eefc;
+      --muted: #8b9bb8;
+      --line: rgba(120, 170, 255, 0.22);
+      --accent: #6ec8ff;
+      --accent-2: #ffb35c;
+      --error: #ff8a7a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      font-family: Segoe UI, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 15% -10%, rgba(80, 130, 220, 0.22), transparent 55%),
+        radial-gradient(900px 500px at 90% 110%, rgba(255, 150, 70, 0.12), transparent 50%),
+        var(--bg);
+      overflow-x: hidden;
+    }
+
+    .stars, .stars::after {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 28% 72%, #cde 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 44% 32%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 63% 12%, #9cf 50%, transparent 51%),
+        radial-gradient(1px 1px at 81% 58%, #fff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 91% 24%, #ffe 50%, transparent 51%),
+        radial-gradient(1px 1px at 8% 88%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 52% 91%, #bcd 50%, transparent 51%);
+      opacity: 0.7;
+    }
+
+    .stars::after {
+      content: "";
+      background-image:
+        radial-gradient(1px 1px at 18% 42%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 36% 8%, #def 50%, transparent 51%),
+        radial-gradient(1px 1px at 71% 77%, #fff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 95% 91%, #ffd 50%, transparent 51%);
+      animation: twinkle 5s ease-in-out infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.25; }
+      50% { opacity: 0.8; }
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      width: min(980px, 100%);
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(280px, 1fr);
+      gap: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    h1, h2 {
+      margin: 0 0 6px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+    }
+
+    h1 { font-size: 1.2rem; }
+    h2 { font-size: 1.05rem; }
+
+    .hint {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .calc-body {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .ops {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 0 0 52px;
+    }
+
+    .ops button {
+      flex: 1;
+      min-height: 72px;
+      border: 1px solid rgba(110, 200, 255, 0.25);
+      border-radius: 10px;
+      background: rgba(110, 200, 255, 0.08);
+      color: var(--accent);
+      font-size: 1.3rem;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .ops button:hover {
+      background: rgba(110, 200, 255, 0.18);
+    }
+
+    .fields { flex: 1; min-width: 0; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(4, 8, 18, 0.55);
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    input[type="text"]:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .actions button, .game-bar button {
+      flex: 1;
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    #add {
+      background: linear-gradient(180deg, #6ec8ff, #3a8adf);
+      color: #061018;
+      font-weight: 650;
+    }
+
+    #clear, #start {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    #add:hover { filter: brightness(1.08); }
+    #clear:hover, #start:hover { background: rgba(255, 255, 255, 0.14); }
+
+    #result {
+      min-height: 1.4em;
+      margin: 16px 0 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(4, 8, 18, 0.45);
+      border: 1px solid var(--line);
+      font-size: 1.05rem;
+    }
+
+    #result.error {
+      color: var(--error);
+      border-color: rgba(255, 138, 122, 0.4);
+    }
+
+    .game-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .score {
+      color: var(--accent-2);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.92rem;
+    }
+
+    .game-wrap {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #050918;
+    }
+
+    #game {
+      display: block;
+      width: 100%;
+      height: 320px;
+      cursor: pointer;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(5, 9, 24, 0.55);
+      text-align: center;
+      padding: 16px;
+      pointer-events: none;
+    }
+
+    .overlay.hidden { display: none; }
+
+    .overlay strong { font-size: 1.1rem; }
+    .overlay span { color: var(--muted); font-size: 0.85rem; }
+
+    @media (max-width: 760px) {
+      .app { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+  <div class="app">
+    <section class="panel">
+      <h1>Орбитальный калькулятор</h1>
+      <p class="hint">Сложение, умножение и деление на фоне звёзд</p>
+      <div class="calc-body">
+        <div class="ops">
+          <button id="mul" type="button" title="Умножить">×</button>
+          <button id="div" type="button" title="Разделить">:</button>
+        </div>
+        <div class="fields">
+          <label for="num1">Число 1</label>
+          <input id="num1" type="text" inputmode="decimal" autocomplete="off">
+          <label for="num2">Число 2</label>
+          <input id="num2" type="text" inputmode="decimal" autocomplete="off">
+          <div class="actions">
+            <button id="add" type="button">Сложить</button>
+            <button id="clear" type="button">Очистить</button>
+          </div>
+          <p id="result" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="game-bar">
+        <div>
+          <h2>Пролёт сквозь пояс</h2>
+          <p class="hint" style="margin: 0;">стрелки или W / S · клик по полю запускает</p>
+        </div>
+        <div class="score">очки: <span id="score">0</span></div>
+        <button id="start" type="button">Старт</button>
+      </div>
+      <div class="game-wrap">
+        <canvas id="game" width="560" height="320"></canvas>
+        <div id="overlay" class="overlay">
+          <strong>Ракета готова</strong>
+          <span>Уворачивайтесь от астероидов</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const num1 = document.getElementById("num1");
+    const num2 = document.getElementById("num2");
+    const result = document.getElementById("result");
+
+    function parseNumber(value) {
+      const trimmed = value.trim().replace(",", ".");
+      if (trimmed === "") return NaN;
+      return Number(trimmed);
+    }
+
+    function calc(op) {
+      const a = parseNumber(num1.value);
+      const b = parseNumber(num2.value);
+
+      if (!Number.isFinite(a) || !Number.isFinite(b)) {
+        result.classList.add("error");
+        result.textContent = "Введите два числа";
+        return;
+      }
+
+      if (op === "div" && b === 0) {
+        result.classList.add("error");
+        result.textContent = "Нельзя делить на ноль";
+        return;
+      }
+
+      const value = op === "add" ? a + b : op === "mul" ? a * b : a / b;
+      result.classList.remove("error");
+      result.textContent = String(value);
+    }
+
+    document.getElementById("add").addEventListener("click", function () { calc("add"); });
+    document.getElementById("mul").addEventListener("click", function () { calc("mul"); });
+    document.getElementById("div").addEventListener("click", function () { calc("div"); });
+    document.getElementById("clear").addEventListener("click", function () {
+      num1.value = "";
+      num2.value = "";
+      result.textContent = "";
+      result.classList.remove("error");
+    });
+
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const overlay = document.getElementById("overlay");
+    const scoreEl = document.getElementById("score");
+    const keys = { up: false, down: false };
+    const stars = [];
+    let running = false;
+    let time = 0;
+    let score = 0;
+    let spawn = 0;
+    let rocket = { x: 72, y: 160, vy: 0 };
+    let rocks = [];
+    let flames = [];
+
+    function resetStars() {
+      stars.length = 0;
+      for (let i = 0; i < 48; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          s: 0.6 + Math.random() * 1.6,
+          v: 18 + Math.random() * 70
+        });
+      }
+    }
+
+    function startGame() {
+      running = true;
+      time = 0;
+      score = 0;
+      spawn = 0;
+      rocket = { x: 72, y: canvas.height / 2, vy: 0 };
+      rocks = [];
+      flames = [];
+      scoreEl.textContent = "0";
+      overlay.classList.add("hidden");
+      resetStars();
+    }
+
+    function endGame() {
+      running = false;
+      overlay.classList.remove("hidden");
+      overlay.innerHTML = "<strong>Столкновение</strong><span>очки: " + score + " · Старт или клик — снова</span>";
+    }
+
+    function spawnRock() {
+      const r = 12 + Math.random() * 22;
+      rocks.push({
+        x: canvas.width + r + 8,
+        y: r + Math.random() * (canvas.height - r * 2),
+        r: r,
+        spin: Math.random() * Math.PI * 2,
+        spinV: (Math.random() - 0.5) * 1.8,
+        speed: 90 + Math.random() * 80 + score * 1.4,
+        dents: Array.from({ length: 7 }, function (_, i) {
+          return 0.78 + Math.sin(i * 1.7 + r) * 0.16 + Math.random() * 0.1;
+        })
+      });
+    }
+
+    function drawRocket(x, y, t) {
+      const flicker = 0.75 + Math.sin(t * 28) * 0.18 + Math.random() * 0.12;
+      const len = 26 * flicker;
+      const grad = ctx.createLinearGradient(x - 18 - len, y, x - 10, y);
+      grad.addColorStop(0, "rgba(255, 90, 40, 0)");
+      grad.addColorStop(0.35, "rgba(255, 150, 50, 0.55)");
+      grad.addColorStop(0.7, "rgba(255, 220, 120, 0.9)");
+      grad.addColorStop(1, "rgba(255, 255, 240, 0.95)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(x - 12, y);
+      ctx.quadraticCurveTo(x - 18 - len * 0.4, y - 9 * flicker, x - 18 - len, y);
+      ctx.quadraticCurveTo(x - 18 - len * 0.4, y + 9 * flicker, x - 12, y);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(255, 240, 180, 0.85)";
+      ctx.beginPath();
+      ctx.ellipse(x - 16, y, 7 * flicker, 3.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#d9e7ff";
+      ctx.beginPath();
+      ctx.moveTo(x + 22, y);
+      ctx.lineTo(x - 8, y - 11);
+      ctx.lineTo(x - 12, y);
+      ctx.lineTo(x - 8, y + 11);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#8fb4e8";
+      ctx.beginPath();
+      ctx.moveTo(x + 6, y);
+      ctx.lineTo(x - 4, y - 6);
+      ctx.lineTo(x - 4, y + 6);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#5aa0ff";
+      ctx.beginPath();
+      ctx.ellipse(x + 4, y, 4.2, 3.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#ff9a4a";
+      ctx.beginPath();
+      ctx.moveTo(x - 2, y - 10);
+      ctx.lineTo(x - 16, y - 16);
+      ctx.lineTo(x - 8, y - 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x - 2, y + 10);
+      ctx.lineTo(x - 16, y + 16);
+      ctx.lineTo(x - 8, y + 4);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawRock(rock) {
+      ctx.save();
+      ctx.translate(rock.x, rock.y);
+      ctx.rotate(rock.spin);
+      ctx.beginPath();
+      rock.dents.forEach(function (d, i) {
+        const a = (i / rock.dents.length) * Math.PI * 2;
+        const px = Math.cos(a) * rock.r * d;
+        const py = Math.sin(a) * rock.r * d;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      ctx.fillStyle = "#6a6f7c";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(210, 220, 235, 0.25)";
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+      ctx.beginPath();
+      ctx.arc(-rock.r * 0.25, -rock.r * 0.2, rock.r * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    let last = performance.now();
+    function frame(now) {
+      const dt = Math.min(0.032, (now - last) / 1000);
+      last = now;
+      time += dt;
+
+      ctx.fillStyle = "#050918";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const drift = running ? 1 : 0.25;
+      stars.forEach(function (s) {
+        s.x -= s.v * dt * drift;
+        if (s.x < 0) s.x = canvas.width;
+        ctx.fillStyle = "rgba(220, 230, 255, 0.7)";
+        ctx.fillRect(s.x, s.y, s.s, s.s);
+      });
+
+      if (running) {
+        const accel = 420;
+        if (keys.up) rocket.vy -= accel * dt;
+        if (keys.down) rocket.vy += accel * dt;
+        rocket.vy *= 0.9;
+        rocket.y += rocket.vy * dt;
+        rocket.y = Math.max(22, Math.min(canvas.height - 22, rocket.y));
+
+        spawn -= dt;
+        if (spawn <= 0) {
+          spawnRock();
+          spawn = Math.max(0.55, 1.35 - score * 0.012);
+        }
+
+        rocks.forEach(function (rock) {
+          rock.x -= rock.speed * dt;
+          rock.spin += rock.spinV * dt;
+        });
+
+        rocks = rocks.filter(function (rock) {
+          if (rock.x + rock.r < 0) {
+            score += 1;
+            scoreEl.textContent = String(score);
+            return false;
+          }
+          return true;
+        });
+
+        if (Math.random() < 0.6) {
+          flames.push({
+            x: rocket.x - 18,
+            y: rocket.y + (Math.random() - 0.5) * 8,
+            vx: -80 - Math.random() * 70,
+            vy: (Math.random() - 0.5) * 40,
+            life: 0.28 + Math.random() * 0.18
+          });
+        }
+        flames.forEach(function (p) {
+          p.life -= dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+        });
+        flames = flames.filter(function (p) { return p.life > 0; });
+
+        const hit = rocks.some(function (rock) {
+          const dx = rock.x - rocket.x;
+          const dy = rock.y - rocket.y;
+          return dx * dx + dy * dy < (rock.r + 12) * (rock.r + 12);
+        });
+        if (hit) endGame();
+      }
+
+      flames.forEach(function (p) {
+        ctx.fillStyle = "rgba(255, 170, 70, " + (p.life * 2.4) + ")";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      rocks.forEach(drawRock);
+      drawRocket(rocket.x, rocket.y, time);
+      requestAnimationFrame(frame);
+    }
+
+    resetStars();
+    requestAnimationFrame(frame);
+
+    document.getElementById("start").addEventListener("click", startGame);
+    canvas.addEventListener("click", function () {
+      if (!running) startGame();
+    });
+
+    window.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") keys.up = true;
+      if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") keys.down = true;
+      if ((e.key === "ArrowUp" || e.key === "ArrowDown") && e.target.tagName !== "INPUT") e.preventDefault();
+    });
+    window.addEventListener("keyup", function (e) {
+      if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") keys.up = false;
+      if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") keys.down = false;
+    });
+  </script>
+</body>
+</html>
